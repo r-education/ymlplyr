@@ -1,0 +1,29 @@
+---
+a: "foo"
+b:
+  c:
+    - foo1
+    - foo2
+    - foo3
+  d: ["bar1", "bar2", "bar3"]
+e: ""
+f: NULL
+---
+
+
+## Remove top-level entry
+
+```{r}
+yml_remove(file, "a")
+```
+
+---
+b:
+  c:
+    - foo1
+    - foo2
+    - foo3
+  d: ["bar1", "bar2", "bar3"]
+e: ""
+f: NULL
+---

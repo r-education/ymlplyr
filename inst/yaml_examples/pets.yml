@@ -1,0 +1,13 @@
+---
+pets:
+  dogs:
+    - Snoopy
+    - Lassie
+  cats:
+    - Garfield
+    - Tigger
+    - Maru
+---
+
+
+This is a a pet example.
