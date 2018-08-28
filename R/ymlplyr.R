@@ -165,3 +165,23 @@ parse_yml <- function(input) {
 has_yml_header <- function(f) {
   !is.null(parse_yml(read_ymlplyr_utf8(f)))
 }
+
+yml_variable_use <- function(path, pattern, vars, recursive = TRUE) {
+  lf <- list.files(path = path, pattern = pattern,
+                   full.names = TRUE, recursive = recursive)
+
+  res <- purrr::map(lf, ~ parse_yml(read_ymlplyr_utf8(.x)))
+
+  cbind(
+    file = lf,
+    purrr::map2_df(lf, res, function(.f, .r) {
+      purrr::map(vars, function(.v) {
+        if (rlang::has_name(.r, .v))
+          .r[[.v]]
+        else NA
+      }) %>%
+        rlang::set_names(vars) %>%
+        tibble::as.tibble()
+    })
+  )
+}
