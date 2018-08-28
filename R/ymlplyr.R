@@ -1,10 +1,11 @@
-##' Modify YAML file headers
+##' Extract and Modify YAML file headers
 ##'
-##' When the list of elements provided does not already exist in the YAML file,
-##' both `yml_overwrite` and `yml_append` behave the same way and will add it to
-##' the YAML header. However, if the element already exists, `yml_overwrite`
-##' will replace the values with the one provided by the function, while
-##' `yml_append` will add them.
+##' `yml_extract` returns the YAML header as a list. When the list of elements
+##' provided by the `what` argument do not already exist in the YAML file, both
+##' `yml_overwrite` and `yml_append` behave the same way and will add them to
+##' the YAML header. However, if the elements already exist, `yml_overwrite`
+##' will replace the values with the ones provided, while `yml_append` will add
+##' them.
 ##'
 ##' Use `NULL` to remove a value from the YAML header.
 ##'
@@ -20,6 +21,9 @@
 ##' pet_yaml_file <- system.file("yaml_examples", "pets.yml",
 ##'                              package="ymlplyr")
 ##' cat(readLines(con = pet_yaml_file), sep="\n")
+##'
+##' ## Extract YAML header
+##' yml_extract(pet_yaml_file)
 ##'
 ##' ## Add elements
 ##' example1 <- tempfile()
@@ -50,7 +54,8 @@
 ##' @export
 yml_replace <- function(file, what, output = file,
                         encoding = getOption("encoding")) {
-  update_yml(file = file, what = what, output = output, method = "overwrite",
+  update_yml(file = file, what = what, output = output,
+             method = "overwrite",
              encoding = encoding)
 }
 
@@ -58,9 +63,29 @@ yml_replace <- function(file, what, output = file,
 ##' @rdname yml_modify
 yml_append <- function(file, what, output = file,
                        encoding = getOption("encoding")) {
-  update_yml(file = file, what = what, output = output, method = "append",
+  update_yml(file = file, what = what, output = output,
+             method = "append",
              encoding = encoding)
 }
+
+extract_lines <- function(file, encoding = getOption("encoding")) {
+  file <- normalizePath(file)
+
+  ## Read entire file
+  lines <- read_ymlplyr_utf8(file, encoding = encoding)
+}
+
+
+##' @export
+##' @rdname yml_extract
+yml_extract <- function(file, encoding = getOption("encoding")) {
+
+  lines <- extract_lines(file)
+
+  ## Extract the YAML header as a list
+  parse_yml(lines)
+}
+
 
 
 ##' @importFrom yaml as.yaml
@@ -71,13 +96,11 @@ update_yml <- function(file, what, output = file,
                        encoding = getOption("encoding")) {
 
   method <- match.arg(method)
-  file <- normalizePath(file)
 
-  ## Read entire file
-  lines <- read_ymlplyr_utf8(file, encoding = encoding)
+  lines <- extract_lines(file, encoding = encoding)
 
-  ## Extract the YML header as a list
   existing_yml <- parse_yml(lines)
+
   yml_bounds <- attr(existing_yml, "yml_bounds")
 
   if (is.null(existing_yml)) {
@@ -100,13 +123,16 @@ update_yml <- function(file, what, output = file,
   new_yml <- gsub("\n$", "", new_yml)
   new_yml <- enc2utf8(new_yml)
 
-  lines <- c(
-    "---",
-    new_yml,
-    "---",
-    lines[(max(yml_bounds)+1):length(lines)]
+  lines <- lines[(max(yml_bounds)+1L):length(lines)]
 
-  )
+  if (nchar(gsub("\\{\\}", "", new_yml)) >  0L) {
+    lines <- c(
+      "---",
+      new_yml,
+      "---",
+      lines
+    )
+  }
 
   write_ymlplyr(lines, output)
 }
@@ -120,7 +146,8 @@ get_yml_bounds <- function(input) {
 parse_yml <- function(input) {
   yml_bounds <- get_yml_bounds(input)
 
-  if (length(yml_bounds) ==  0L)
+  if (identical(length(yml_bounds), 0L) ||
+        !identical(min(yml_bounds), 1L))
     return(NULL)
 
   res <- yaml::yaml.load(input[yml_bounds[1]:yml_bounds[2]],
@@ -129,6 +156,7 @@ parse_yml <- function(input) {
                          handlers = list(
                            "float#fix" = function(x) x
                          ))
+  if (is.null(res)) return(NULL)
   attr(res, "yml_bounds") <- yml_bounds
   res
 }
