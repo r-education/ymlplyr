@@ -1,6 +1,6 @@
 ### taken from rmarkdown
 read_lines_utf8 <- function(file, encoding) {
-  lines <- readLines(file, warn = TRUE)
+  lines <- readLines(file, n = 1000, warn = TRUE)
   to_utf8(lines, encoding)
 }
 
