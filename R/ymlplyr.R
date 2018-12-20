@@ -166,6 +166,7 @@ has_yml_header <- function(f) {
   !is.null(parse_yml(read_ymlplyr_utf8(f)))
 }
 
+##' @importFrom purrr %>%
 yml_variable_use <- function(path, pattern, vars, recursive = TRUE) {
   lf <- list.files(path = path, pattern = pattern,
                    full.names = TRUE, recursive = recursive)
